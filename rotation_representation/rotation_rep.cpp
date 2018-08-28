@@ -5,7 +5,6 @@ using namespace std;
 #define PI 3.14159265
 
 template <typename T>
-// A function to convert rotation matrix to euler angle and vice versa
 vector<vector<T> > matrixMultiply(vector<vector<T> > matrix1, vector<vector<T> > matrix2){
     vector<vector<T> > product;
     int N = matrix1.size();
@@ -23,6 +22,7 @@ vector<vector<T> > matrixMultiply(vector<vector<T> > matrix1, vector<vector<T> >
     return product;
 }
 
+// A function to convert rotation matrix to euler angle and vice versa
 template <typename T>
 bool convertRotationMatrix2EulerAngle(vector<vector<T> >& matrix, vector<T>& angles){
     int row = 3;
@@ -74,6 +74,81 @@ bool convertRotationMatrix2EulerAngle(vector<vector<T> >& matrix, vector<T>& ang
     
 }  
 
+// A function to convert rotation matrix to quaternion and vice versa
+template <typename T>
+bool convertRotationMatrix2Quaternion(vector<vector<T> >& matrix, vector<T>& quaternion){
+    // matrix to quaternion:
+    if(quaternion.size()==0){
+        T s, w, x, y, z;
+        T trace = matrix[0][0]+matrix[1][1]+matrix[2][2];
+        if(trace>0){
+            s = 0.5/sqrt(trace+1.0);
+            w = 1/(4*s);
+            x = (matrix[2][1]-matrix[1][2])*s;
+            y = (matrix[0][2]-matrix[2][0])*s;
+            z = (matrix[1][0]-matrix[0][1])*s;
+        }
+        else{
+            if(matrix[0][0]>matrix[1][1] && matrix[0][0]>matrix[2][2]){
+                s = 2.0 * sqrt( 1.0 + matrix[0][0] - matrix[1][1] - matrix[2][2]);
+                w = (matrix[2][1] - matrix[1][2] ) / s;
+                x = 0.25 * s;
+                y = (matrix[0][1] + matrix[1][0] ) / s;
+                z = (matrix[0][2] + matrix[2][0] ) / s;
+            }
+            else if (matrix[1][1] > matrix[2][2]) {
+                s = 2.0 * sqrt( 1.0 + matrix[1][1] - matrix[0][0] - matrix[2][2]);
+                w = (matrix[0][2] - matrix[2][0] ) / s;
+                x = (matrix[0][1] + matrix[1][0] ) / s;
+                y = 0.25 * s;
+                z = (matrix[1][2] + matrix[2][1] ) / s;
+                } 
+            else {
+                s = 2.0 * sqrt( 1.0 + matrix[2][2] - matrix[0][0] - matrix[1][1] );
+                w = (matrix[1][0] - matrix[0][1] ) / s;
+                x = (matrix[0][2] + matrix[2][0] ) / s;
+                y = (matrix[1][2] + matrix[2][1] ) / s;
+                z = 0.25 * s;
+            }
+        }
+        quaternion.push_back(w);
+        quaternion.push_back(x);
+        quaternion.push_back(y);
+        quaternion.push_back(z);
+        return true;
+    }
+    // quaternion to matrix: 
+    else if(matrix.size()==0){
+        T w = quaternion[0];
+        T x = quaternion[1];
+        T y = quaternion[2];
+        T z = quaternion[3];
+        matrix = {{1-2*y*y-2*z*z, 2*x*y-2*z*w, 2*x*z+2*y*w}, 
+                    {2*x*y+2*z*w, 1-2*x*x-2*z*z, 2*y*z-2*x*w}, 
+                    {2*x*z-2*y*w, 2*y*z+2*x*w, 1-2*x*x-2*y*y}};
+        return true;
+    }
+}
+
+
+// A function to convert euler angles to quaternion and vice versa
+template <typename T>
+bool convertEuler2Quaternion(vector<T>& euler, vector<T>& quaternion){
+    // euler to quaternion:
+    if(quaternion.size() == 0){
+        vector<vector<T>> matrix;
+        bool success = convertRotationMatrix2EulerAngle(matrix, euler);
+        success = convertRotationMatrix2Quaternion(matrix, quaternion);
+    }
+    // quaternion to euler:
+    else if(euler.size() == 0){
+        vector<vector<T>> matrix;
+        bool success = convertRotationMatrix2Quaternion(matrix, quaternion);
+        success = convertRotationMatrix2EulerAngle(matrix, euler);
+    }
+    return true;
+}
+
 // test case
 int main(){
     // test euler to matrix:
@@ -101,5 +176,41 @@ int main(){
         cout<<euler1[i]<<endl;
     }
 
+    // test matrix to quaternion:
+    vector<double> quaternion;
+    success = convertRotationMatrix2Quaternion(matrix, quaternion);
+    cout<<"The quaternion is:"<<endl;
+    for(int i=0; i<quaternion.size(); i++){
+        cout<<quaternion[i]<<endl;
+    }
+
+    // test quaternion to matrix:
+    vector<vector<double>> matrix2;
+    success = convertRotationMatrix2Quaternion(matrix2, quaternion);
+    cout<<"The rotation matrix is:"<<endl;
+    for(int i=0; i<matrix2.size(); i++){
+        for(int j=0; j<matrix2[i].size(); j++){
+            cout<<matrix2[i][j]<<' ';
+        }
+        cout<<endl;
+    }
+ 
+    // test euler to quaternion:
+    vector<double> quaternion1;
+    success = convertEuler2Quaternion(euler, quaternion1);
+    cout<<"The quaternion is:"<<endl;
+    for(int i=0; i<quaternion1.size(); i++){
+        cout<<quaternion1[i]<<endl;
+    }
+
+    // test quaternion to euler:
+    vector<double> euler2;
+    success = convertEuler2Quaternion(euler2, quaternion1);
+    cout<<"The euler angle is:"<<endl;
+    for(int i=0; i<euler2.size(); i++){
+        cout<<euler2[i]<<endl;
+    }
+    
+    
     return 0;
 }
